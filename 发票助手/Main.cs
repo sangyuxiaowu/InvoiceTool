@@ -263,25 +263,27 @@ namespace 发票助手
 
         private void dgvPdfFiles_DragDrop(object sender, DragEventArgs e)
         {
-            // 支持文件夹也支持单个PDF文件
+            // 支持文件夹和多个PDF文件
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (files.Length > 0)
             {
-                string dir = files[0];
-                if (Directory.Exists(dir))
+                foreach (string path in files)
                 {
-                    txtDir.Text = dir;
-                    LoadPdfFiles(dir, false);
-                }
-                else
-                {
-                    FileInfo file = new FileInfo(files[0]);
-                    if (file.Extension == ".pdf")
+                    if (Directory.Exists(path))
                     {
-                        AnalyzePdfFile(dir, file.Name);
-                        UpdateStatistics();
+                        txtDir.Text = path;
+                        LoadPdfFiles(path, false);
+                    }
+                    else
+                    {
+                        FileInfo file = new FileInfo(path);
+                        if (file.Extension == ".pdf")
+                        {
+                            AnalyzePdfFile(file.FullName, file.Name);
+                        }
                     }
                 }
+                UpdateStatistics();
             }
         }
 

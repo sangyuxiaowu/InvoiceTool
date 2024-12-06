@@ -54,7 +54,14 @@ namespace 发票助手
             {
                 HeaderText = "开票日期",
                 Name = "InvoiceDate",
-                Width = 150,
+                Width = 80,
+                CellTemplate = new DataGridViewTextBoxCell()
+            });
+            dgvPdfFiles.Columns.Add(new DataGridViewColumn()
+            {
+                HeaderText = "开票类目",
+                Name = "InvoiceType",
+                Width = 120,
                 CellTemplate = new DataGridViewTextBoxCell()
             });
             // 发票金额
@@ -70,6 +77,23 @@ namespace 发票助手
         /// [壹贰叁肆伍陆柒捌玖拾]\s?[零壹贰叁肆伍陆柒捌玖拾佰仟万亿整元圆角分\s]+[整元圆角分]
         /// </summary>
         private static readonly Regex amountRegex = new Regex(@"[壹贰叁肆伍陆柒捌玖拾]\s?[零壹贰叁肆伍陆柒捌玖拾佰仟万亿整元圆角分\s]+[整元圆角分]", RegexOptions.Compiled);
+
+        /// <summary>
+        /// 正则匹配年月日
+        /// 开票日期[:：]\s*\d{4}年\d{2}月\d{2}日
+        /// </summary>
+        private static readonly Regex dateRegex = new Regex(@"\d{4}年\d{2}月\d{2}日", RegexOptions.Compiled);
+
+        /// <summary>
+        /// 匹配发票号码
+        /// </summary>
+        private static readonly Regex noRegex = new Regex(@"发票号码[:：]\s*(\d+)", RegexOptions.Compiled);
+
+        /// <summary>
+        /// 匹配类目
+        /// 匹配到第一个，然后去除两边的*号
+        /// </summary>
+        private static readonly Regex typeRegex = new Regex(@"\*.*?\*", RegexOptions.Compiled);
 
         /// <summary>
         /// 匹配金额
@@ -115,7 +139,8 @@ namespace 发票助手
                 if (firstPage != null)
                 {
                     // 处理二维码
-                    var firstImage = firstPage.GetImages().FirstOrDefault();
+                    var images = firstPage.GetImages().Where(i => i.HeightInSamples == i.WidthInSamples && i.WidthInSamples > 100 && i.HeightInSamples > 100);
+                    var firstImage = images.FirstOrDefault();
                     if (firstImage != null)
                     {
                         var bitmap = ConvertPdfImageToBitmap(firstImage);
@@ -126,11 +151,14 @@ namespace 发票助手
                             string[] values = result.Split(',');
                             if (values.Length > 6)
                             {
-                                dgvPdfFiles.Rows.Add(fullname, name, values[3], values[5], values[4]);
+                                // 格式化日期统一
+                                var invoiceDate = values[5].Contains("-") || values[5] == "?" ? values[5] : values[5].Insert(4, "-").Insert(7, "-");
+
+                                dgvPdfFiles.Rows.Add(fullname, name, values[3], invoiceDate, "", values[4]);
                             }
                             else
                             {
-                                dgvPdfFiles.Rows.Add(fullname, name, "?", "?", "?");
+                                dgvPdfFiles.Rows.Add(fullname, name, "?", "?", "?", "?");
                             }
 
                             // 处理文字内容，解决非31,32数电的发票
@@ -150,6 +178,37 @@ namespace 发票助手
                                 }
                                 dgvPdfFiles.Rows[dgvPdfFiles.Rows.Count - 1].Cells["InvoiceAmount"].Value = amount;
                             }
+
+                            // 处理类目
+                            var typeMatch = typeRegex.Match(text);
+                            if (typeMatch.Success)
+                            {
+                                var type = typeMatch.Value.Trim('*');
+                                dgvPdfFiles.Rows[dgvPdfFiles.Rows.Count - 1].Cells["InvoiceType"].Value = type;
+                            }
+                            // 处理发票号码
+                            if(dgvPdfFiles.Rows[dgvPdfFiles.Rows.Count - 1].Cells["InvoiceNo"].Value.ToString() == "?")
+                            {
+                                var noMatch = noRegex.Match(text);
+                                if (noMatch.Success)
+                                {
+                                    var no = noMatch.Groups[1].Value;
+                                    dgvPdfFiles.Rows[dgvPdfFiles.Rows.Count - 1].Cells["InvoiceNo"].Value = no;
+                                }
+                            }
+                            // 开票日期
+                            if (dgvPdfFiles.Rows[dgvPdfFiles.Rows.Count - 1].Cells["InvoiceDate"].Value.ToString() == "?")
+                            {
+                                var dateMatch = dateRegex.Match(text);
+                                if (dateMatch.Success)
+                                {
+                                    var date = dateMatch.Value;
+                                    // 修改日期格式
+                                    date = date.Replace("年", "-").Replace("月", "-").Replace("日", "");
+                                    dgvPdfFiles.Rows[dgvPdfFiles.Rows.Count - 1].Cells["InvoiceDate"].Value = date;
+                                }
+                            }
+
                         }
                     }
 
@@ -316,6 +375,7 @@ namespace 发票助手
 
             using (SaveFileDialog sfd = new SaveFileDialog()
             {
+                FileName = "发票数据.csv",
                 Filter = "CSV文件|*.csv",
                 Title = "保存CSV文件"
             })
@@ -327,22 +387,76 @@ namespace 发票助手
                     using (StreamWriter sw = new StreamWriter(outputFilePath, false, Encoding.UTF8))
                     {
                         // 带 BOM 的 UTF-8 文件头
-                        sw.WriteLine("\uFEFF文件名,发票号码,开票日期,金额");
+                        sw.WriteLine("\uFEFF文件名,发票号码,开票日期,开票类目,金额");
 
                         foreach (DataGridViewRow row in dgvPdfFiles.Rows)
                         {
                             string fileName = row.Cells["FileName"].Value.ToString();
                             string invoiceNo = row.Cells["InvoiceNo"].Value.ToString();
                             string invoiceDate = row.Cells["InvoiceDate"].Value.ToString();
+                            string invoiceType = row.Cells["InvoiceType"].Value.ToString();
                             string invoiceAmount = row.Cells["InvoiceAmount"].Value.ToString();
 
-                            sw.WriteLine($"{fileName},{invoiceNo},{invoiceDate},{invoiceAmount}");
+                            sw.WriteLine($"{fileName},{invoiceNo},{invoiceDate},{invoiceType},{invoiceAmount}");
                         }
+                    }
+
+                    // 询问是否打开文件
+                    if (MessageBox.Show("CSV文件导出完成，是否打开？", "提示", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start(outputFilePath);
                     }
 
                     txtStatus.Text = "CSV文件导出完成";
                 }
             }
+        }
+
+
+        /// <summary>
+        /// 导出发票类目及金额信息
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnExportType_Click(object sender, EventArgs e)
+        {
+            // 将列表导出CSV文件
+            using (SaveFileDialog sfd = new SaveFileDialog()
+            {
+                FileName = "发票类目金额.csv",
+                Filter = "CSV文件|*.csv",
+                Title = "保存CSV文件"
+            })
+            {
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    string outputFilePath = sfd.FileName;
+                    using (StreamWriter sw = new StreamWriter(outputFilePath, false, Encoding.UTF8))
+                    {
+                        // 带 BOM 的 UTF-8 文件头
+                        sw.WriteLine("\uFEFF开票类目,金额");
+                        var query = dgvPdfFiles.Rows.Cast<DataGridViewRow>().GroupBy(r => r.Cells["InvoiceType"].Value.ToString())
+                            .Select(g => new
+                            {
+                                InvoiceType = g.Key,
+                                Amount = g.Sum(r => Convert.ToDecimal(r.Cells["InvoiceAmount"].Value))
+                            });
+                        foreach (var item in query)
+                        {
+                            sw.WriteLine($"{item.InvoiceType},{item.Amount}");
+                        }
+                    }
+
+                    // 询问是否打开文件
+                    if (MessageBox.Show("CSV文件导出完成，是否打开？", "提示", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start(outputFilePath);
+                    }
+
+                    txtStatus.Text = "CSV文件导出完成";
+                }
+            }
+
         }
 
         /// <summary>
@@ -438,6 +552,7 @@ namespace 发票助手
             // 发送 Ctrl + P
             SendKeys.SendWait("^(p)");
         }
+
 
 
         #endregion

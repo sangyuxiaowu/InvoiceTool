@@ -42,6 +42,7 @@
             this.btnReset = new System.Windows.Forms.Button();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.btnExportType = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPdfFiles)).BeginInit();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -75,7 +76,7 @@
             this.btnPrint.Name = "btnPrint";
             this.btnPrint.Size = new System.Drawing.Size(75, 23);
             this.btnPrint.TabIndex = 2;
-            this.btnPrint.Text = "打印";
+            this.btnPrint.Text = "打印 PDF";
             this.btnPrint.UseVisualStyleBackColor = true;
             this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
             // 
@@ -86,7 +87,7 @@
             this.btnMerge.Name = "btnMerge";
             this.btnMerge.Size = new System.Drawing.Size(75, 23);
             this.btnMerge.TabIndex = 4;
-            this.btnMerge.Text = "合并";
+            this.btnMerge.Text = "合并 PDF";
             this.btnMerge.UseVisualStyleBackColor = true;
             this.btnMerge.Click += new System.EventHandler(this.btnMerge_Click);
             // 
@@ -113,7 +114,7 @@
             this.btnExport.Name = "btnExport";
             this.btnExport.Size = new System.Drawing.Size(75, 23);
             this.btnExport.TabIndex = 6;
-            this.btnExport.Text = "导出";
+            this.btnExport.Text = "导出明细";
             this.btnExport.UseVisualStyleBackColor = true;
             this.btnExport.Click += new System.EventHandler(this.btnExport_Click);
             // 
@@ -157,11 +158,11 @@
             // btnReset
             // 
             this.btnReset.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnReset.Location = new System.Drawing.Point(454, 410);
+            this.btnReset.Location = new System.Drawing.Point(373, 410);
             this.btnReset.Name = "btnReset";
             this.btnReset.Size = new System.Drawing.Size(75, 23);
             this.btnReset.TabIndex = 12;
-            this.btnReset.Text = "重置";
+            this.btnReset.Text = "清空列表";
             this.btnReset.UseVisualStyleBackColor = true;
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
@@ -181,11 +182,23 @@
             this.txtStatus.Size = new System.Drawing.Size(41, 17);
             this.txtStatus.Text = "就绪...";
             // 
+            // btnExportType
+            // 
+            this.btnExportType.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnExportType.Location = new System.Drawing.Point(454, 410);
+            this.btnExportType.Name = "btnExportType";
+            this.btnExportType.Size = new System.Drawing.Size(75, 23);
+            this.btnExportType.TabIndex = 14;
+            this.btnExportType.Text = "导出类目";
+            this.btnExportType.UseVisualStyleBackColor = true;
+            this.btnExportType.Click += new System.EventHandler(this.btnExportType_Click);
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 463);
+            this.Controls.Add(this.btnExportType);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.btnReset);
             this.Controls.Add(this.txtS);
@@ -227,6 +240,7 @@
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel txtStatus;
+        private System.Windows.Forms.Button btnExportType;
     }
 }
 

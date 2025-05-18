@@ -240,6 +240,15 @@ namespace 发票助手
 
         static Bitmap ConvertPdfImageToBitmap(IPdfImage pdfImage)
         {
+            if (pdfImage.RawBytes[0] == 255)
+            {
+                // 处理JPEG图片
+                using (MemoryStream ms = new MemoryStream(pdfImage.RawBytes.ToArray()))
+                {
+                    return new Bitmap(ms);
+                }
+            }
+
             pdfImage.TryGetPng(out byte[] pngBytes);
             if (pngBytes == null)
             {
